@@ -1,51 +1,51 @@
 #!/bin/bash
 #
-# Convert all LilyPond files in each directory to SVG, MIDI, WebM, and MusicXML.
+# Convert all LilyPond files to SVG, MIDI, WebM, and MusicXML.
 #
 # Prerequisites:
 #
-# - lilypond
-# - librsvg
-# - fluidsynth
+# - lilypond 2.24.4
+# - librsvg 2.61.3
+# - fluidsynth 2.5.2
 # - FluidR3_GM.sf2
-# - ffmpeg
-# - python3
-# - python-ly
+# - ffmpeg 8.0.1
+# - python 3.14.2
+# - python-ly 0.9.9
 #
 
-# Exit immediately if any command fails.
+# Exit immediately if any command fails
 set -xeuo pipefail
 IFS=$'\n\t'
 
 SOUNDFONT='FluidR3_GM.sf2'
 
-for ly in */*.ly; do
-  input="${ly%.ly}"
+for score in */*.ly; do
+  song="${score%.ly}"
 
   # Convert LilyPond to SVG and MIDI
-  lilypond --svg -dcrop -dmidi-extension=mid "$input.ly"
-  mv "$input.cropped.svg" "$input.svg"
+  lilypond --svg -dcrop -dmidi-extension=mid "$song.ly"
+  mv "$song.cropped.svg" "$song.svg"
 
   # Set SVG background to white
-  rsvg-convert -b white -f svg -o "$input.svg" "$input.svg"
+  rsvg-convert -b white -f svg -o "$song.svg" "$song.svg"
 
   # Convert MIDI to WAV
-  fluidsynth -ni "$SOUNDFONT" "$input.mid" -F "$input.wav"
+  fluidsynth -ni "$SOUNDFONT" "$song.mid" -F "$song.wav"
 
   # Convert WAV to WebM
-  ffmpeg -y -f lavfi -i 'color=c=black:s=320x180' -i "$input.wav" \
+  ffmpeg -y -f lavfi -i 'color=c=black:s=320x180' -i "$song.wav" \
     -c:v libvpx-vp9 -c:a libopus \
     -af 'silenceremove=stop_periods=1:stop_threshold=-50dB' \
     -shortest -pix_fmt yuv420p \
-    "$input.webm"
+    "$song.webm"
 
-  rm "$input.wav"
+  rm "$song.wav"
 
   # Convert LilyPond to MusicXML (extract only `\relative` block)
   python3 -c '
     import re, sys
     score = open(sys.argv[1]).read()
     print(re.search(r"\\relative.*?{.*?}", score, re.DOTALL).group(0))
-  ' "$input.ly" \
-    | ly musicxml -d 'backup-suffix=' -o "$input.musicxml"
+  ' "$song.ly" \
+    | ly musicxml -d 'backup-suffix=' -o "$song.musicxml"
 done
