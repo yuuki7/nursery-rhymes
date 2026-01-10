@@ -8,8 +8,6 @@
 # - fluidsynth 2.5.2
 # - FluidR3_GM.sf2
 # - ffmpeg 8.0.1
-# - python 3.14.2
-# - python-ly 0.9.9
 #
 
 # Exit immediately if any command fails
@@ -38,12 +36,4 @@ for file in */*.ly; do
     "$song.webm"
 
   rm "$song.wav"
-
-  # Convert LilyPond to MusicXML (extract only `\relative` block)
-  python3 -c '
-    import re, sys
-    score = open(sys.argv[1]).read()
-    print(re.search(r"\\relative.*?{.*?}", score, re.DOTALL).group(0))
-  ' "$song.ly" \
-    | ly musicxml -d 'backup-suffix=' -o "$song.musicxml"
 done
